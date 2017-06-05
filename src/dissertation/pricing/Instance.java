@@ -5,16 +5,6 @@ import java.util.List;
 
 public class Instance {
 
-    public static final int CAPACITY = 4;
-
-    // in $/hour
-    public static final float ONDEMAND_PRICE = 0.772f;
-    public static final float RESERVED_PRICE = 0.357f;
-
-    // in minutes
-    public static final int ONDEMAND_CUTOFF_PERIOD = 60;
-    public static final int RESERVED_CUTOFF_PERIOD = 43200;
-
     public enum Type {
         Ondemand, Reserved
     }
@@ -56,10 +46,10 @@ public class Instance {
         int cutoffPeriod;
         switch (_type) {
             case Ondemand:
-                cutoffPeriod = ONDEMAND_CUTOFF_PERIOD;
+                cutoffPeriod = Config.ONDEMAND_CUTOFF_PERIOD;
                 break;
             case Reserved:
-                cutoffPeriod = RESERVED_CUTOFF_PERIOD;
+                cutoffPeriod = Config.RESERVED_CUTOFF_PERIOD;
                 break;
             default:
                 return false;
@@ -68,7 +58,7 @@ public class Instance {
     }
 
     public int getAvail() {
-        return CAPACITY - _players.stream().mapToInt(Integer::intValue).sum();
+        return Config.INS_CAPACITY - _players.stream().mapToInt(Integer::intValue).sum();
     }
 
     public float getCost() {
@@ -76,12 +66,12 @@ public class Instance {
         int cutoffPeriod;
         switch (_type) {
             case Ondemand:
-                unitPrice = ONDEMAND_PRICE;
-                cutoffPeriod = ONDEMAND_CUTOFF_PERIOD;
+                unitPrice = Config.ONDEMAND_PRICE;
+                cutoffPeriod = Config.ONDEMAND_CUTOFF_PERIOD;
                 break;
             case Reserved:
-                unitPrice = RESERVED_PRICE;
-                cutoffPeriod = RESERVED_CUTOFF_PERIOD;
+                unitPrice = Config.RESERVED_PRICE;
+                cutoffPeriod = Config.RESERVED_CUTOFF_PERIOD;
                 break;
             default:
                 return -10000000.0f;

@@ -11,35 +11,36 @@ import java.util.Scanner;
 
 public class DissertationJv {
 
-    public static int DELTA_TIME = 2;
-    public static int PREDICTED_VALUE = 4000;
-
-    public static void main(String[] args) throws FileNotFoundException, ParseException {
+    public static void main(String[] args) throws FileNotFoundException, ParseException, IllegalAccessException {
         // record start time
         TimeUtil.start();
+        
+        // output config
+        System.out.println("Config");
+        System.out.println(Config.all());
 
         // init allocators
         Allocator ondemandAllocator = new Allocator();
-        Allocator hybridAllocator = new Allocator(PREDICTED_VALUE);
+        Allocator hybridAllocator = new Allocator(Config.RESERVED_QUOTA);
         
         // read file
-        String fileName = "Germany_2017-03-31.csv";
-        int zeroBasedMonth = Calendar.APRIL;
-        System.out.println("Reading from " + fileName + ", month = " + (zeroBasedMonth + 1));
-        List<Integer> aprilData = readPlayerCount(fileName, zeroBasedMonth);
+        String fileName = Config.FILE_NAME;
+        int zMonth = Config.MONTH;
+        System.out.println("Reading from " + fileName + ", month = " + (zMonth + 1));
+        List<Integer> aprilData = readPlayerCount(fileName, zMonth);
         System.out.println("    DONE");
 
         // 2 minutes/entry
         System.out.println("");
-        System.out.println("Processing " + aprilData.size() + " time instances...");
+        System.out.println("Processing " + aprilData.size() + " timestamps...");
         for (int i = 0; i < aprilData.size(); i++) {
             if (i >= 5000 && i % 5000 == 0) {
                 System.out.println("    " + i + " done");
             }
             // tick
             if (i != 0) {
-                ondemandAllocator.tickIns(DELTA_TIME);
-                hybridAllocator.tickIns(DELTA_TIME);
+                ondemandAllocator.tickIns(Config.DELTA_TIME);
+                hybridAllocator.tickIns(Config.DELTA_TIME);
             }
 
             // calculate diff
@@ -53,7 +54,7 @@ public class DissertationJv {
             if (diff > 0) {
                 // allocate simulated new demand
                 for (int p = 0; p < diff; p++) {
-                    int curDemand = Util.rand(1, Instance.CAPACITY);
+                    int curDemand = Util.rand(1, Config.INS_CAPACITY);
                     ondemandAllocator.allocatePlayer(curDemand);
                     hybridAllocator.allocatePlayer(curDemand);
 

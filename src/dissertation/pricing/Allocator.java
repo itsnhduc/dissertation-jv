@@ -15,13 +15,13 @@ public class Allocator {
 
         // map by available space
         _insMap = new HashMap<>();
-        for (int i = 0; i <= Instance.CAPACITY; i++) {
+        for (int i = 0; i <= Config.INS_CAPACITY; i++) {
             _insMap.put(i, new ArrayList<>());
         }
 
         // init reserved ins
         for (int i = 0; i < _reservedQuota; i++) {
-            _insMap.get(Instance.CAPACITY)
+            _insMap.get(Config.INS_CAPACITY)
                     .add(new Instance(Instance.Type.Reserved));
         }
     }
@@ -45,7 +45,7 @@ public class Allocator {
         int insI = -1;
         int key = -1;
         // smallest fit first
-        for (int k = demand; k <= Instance.CAPACITY; k++) {
+        for (int k = demand; k <= Config.INS_CAPACITY; k++) {
             List<Instance> insMapEntry = _insMap.get(k);
             if (!insMapEntry.isEmpty()) {
                 key = k;
@@ -70,7 +70,7 @@ public class Allocator {
         int key;
         List<Instance> insMapEntry;
         do {
-            key = Util.rand(0, Instance.CAPACITY);
+            key = Util.rand(0, Config.INS_CAPACITY);
             insMapEntry = _insMap.get(key);
         } while (insMapEntry.isEmpty());
 
