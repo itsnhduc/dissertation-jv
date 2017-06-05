@@ -1,33 +1,57 @@
 package dissertation.pricing;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Scanner;
 
 public class DissertationJv {
 
     public static void main(String[] args) throws FileNotFoundException, ParseException, IllegalAccessException {
         // record start time
         TimeUtil.start();
-        
+
+        _testQuotaRange(6600, 6800, 10);
+
+        // output time taken
+        System.out.println("");
+        TimeUtil.end();
+    }
+
+    private static void _testQuotaRange(int minQuota, int maxQuota, int step)
+            throws IllegalAccessException, ParseException, FileNotFoundException {
+        List<QuotaTestResult> results = new ArrayList<>();
+        for (int curQ = minQuota; curQ <= maxQuota; curQ += step) {
+            results.add(_testQuota(curQ));
+        }
+        System.out.println("Quota" + "\t"
+                + "On-demand" + "\t"
+                + "Reserved" + "\t"
+                + "Saving");
+        results.forEach((res) -> {
+            System.out.println(res.quota + "\t"
+                    + res.ondemandCost + "\t"
+                    + res.reservedCost + "\t"
+                    + res.expectedSaving);
+        });
+    }
+
+    private static QuotaTestResult _testQuota(int reservedQuota)
+            throws IllegalAccessException, ParseException, FileNotFoundException {
+        System.out.println("///////////////////// " + reservedQuota + " /////////////////////");
         // output config
         System.out.println("Config");
         System.out.println(Config.all());
 
         // init allocators
         Allocator ondemandAllocator = new Allocator();
-        Allocator hybridAllocator = new Allocator(Config.RESERVED_QUOTA);
-        
+        Allocator hybridAllocator = new Allocator(reservedQuota);
+
         // read file
         String fileName = Config.FILE_NAME;
         int zMonth = Config.MONTH;
         System.out.println("Reading from " + fileName + ", month = " + (zMonth + 1));
-        List<Integer> aprilData = readPlayerCount(fileName, zMonth);
+        List<Integer> aprilData = Util.readPlayerCount(fileName, zMonth);
         System.out.println("    DONE");
 
         // 2 minutes/entry
@@ -81,45 +105,17 @@ public class DissertationJv {
         System.out.println("    DONE");
 
         // out total ondemand price
+        float ondemandCost = ondemandAllocator.getCost();
+        float hybridCost = hybridAllocator.getCost();
+        float expectedSaving = ondemandCost - hybridCost;
         System.out.println("");
         System.out.println("Total cost");
-        System.out.println("    On-demand scheme: $" + ondemandAllocator.getCost());
-        System.out.println("    Hybrid scheme: $" + hybridAllocator.getCost());
-        float costDiff = ondemandAllocator.getCost() - hybridAllocator.getCost();
-        System.out.println("    Expected saving: $" + costDiff);
+        System.out.println("    On-demand scheme: $" + ondemandCost);
+        System.out.println("    Hybrid scheme: $" + hybridCost);
+        System.out.println("    Expected saving: $" + expectedSaving);
+        System.out.println("////////////////////////////////////////////////");
 
-        // output time taken
-        System.out.println("");
-        TimeUtil.end();
-    }
-
-    public static List<Integer> readPlayerCount(String filePath, int zeroBasedMonth) 
-            throws FileNotFoundException, ParseException {
-        List<Integer> playerList = new ArrayList<>();
-
-        Scanner s = new Scanner(new File(filePath));
-        SimpleDateFormat parser = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-        Calendar cal = Calendar.getInstance();
-
-        while (s.hasNext()) {
-            String[] curLineInfo = s.nextLine().split(",");
-            if (!"index".equals(curLineInfo[0])) {
-                cal.setTime(parser.parse(curLineInfo[2]));
-                boolean isCurMonth = 
-                        cal.get(Calendar.MONTH) == zeroBasedMonth;
-                boolean isNextMonthStart =
-                        cal.get(Calendar.MONTH) == zeroBasedMonth + 1 &&
-                        cal.get(Calendar.DATE) == 1 &&
-                        cal.get(Calendar.HOUR_OF_DAY) == 0 &&
-                        cal.get(Calendar.MINUTE) == 0 &&
-                        cal.get(Calendar.SECOND) < 5;
-                if (isCurMonth || isNextMonthStart) { // April data
-                    playerList.add(Integer.parseInt(curLineInfo[1]));
-                }
-            }
-        }
-
-        return playerList;
+        return new QuotaTestResult(reservedQuota, ondemandCost, hybridCost);
     }
 
 }

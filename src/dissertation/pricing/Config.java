@@ -7,7 +7,7 @@ public class Config {
 
     //// MISC
     public static final int DELTA_TIME = 2;
-    public static final int RESERVED_QUOTA = 6535;
+//    public static final int RESERVED_QUOTA = 6535;
     
     //// FILE
     public static final String FILE_NAME = "Germany_2017-03-31.csv";
