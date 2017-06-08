@@ -1,33 +1,38 @@
 package dissertation.pricing;
 
+import dissertation.pricing.Instance.CapacityType;
+import dissertation.pricing.Instance.PricingType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 public class Allocator {
 
-    private final int _reservedQuota;
+    public final Instance ondemandProto;
+    public final int reservedQuota;
+    
     private final HashMap<Integer, List<Instance>> _insMap;
     private float _wrapCost = 0.0f;
 
-    public Allocator(int reservedQuota) {
-        _reservedQuota = reservedQuota;
+    public Allocator(CapacityType capacityType, int reservedQuota) {
+        this.reservedQuota = reservedQuota;
+        this.ondemandProto = new Instance(PricingType.Ondemand, capacityType);
 
         // map by available space
         _insMap = new HashMap<>();
-        for (int i = 0; i <= Config.INS_CAPACITY; i++) {
+        for (int i = 0; i <= ondemandProto.capacity; i++) {
             _insMap.put(i, new ArrayList<>());
         }
 
         // init reserved ins
-        for (int i = 0; i < _reservedQuota; i++) {
-            _insMap.get(Config.INS_CAPACITY)
-                    .add(new Instance(Instance.Type.Reserved));
+        for (int i = 0; i < this.reservedQuota; i++) {
+            _insMap.get(ondemandProto.capacity)
+                    .add(new Instance(PricingType.Reserved, capacityType));
         }
     }
 
-    public Allocator() {
-        this(0);
+    public Allocator(CapacityType capacityType) {
+        this(capacityType, 0);
     }
 
     private void _updateIns(int key, int insI, Instance ins) {
@@ -45,11 +50,11 @@ public class Allocator {
         int insI = -1;
         int key = -1;
         // smallest fit first
-        for (int k = demand; k <= Config.INS_CAPACITY; k++) {
+        for (int k = demand; k <= ondemandProto.capacity; k++) {
             List<Instance> insMapEntry = _insMap.get(k);
             if (!insMapEntry.isEmpty()) {
                 key = k;
-                insI = Util.rand(0, insMapEntry.size());
+                insI = Util.rand(insMapEntry.size());
                 ins = insMapEntry.get(insI).clone();
                 break;
             }
@@ -57,7 +62,7 @@ public class Allocator {
 
         // allocate player
         if (ins == null) {
-            ins = new Instance(Instance.Type.Ondemand);
+            ins = ondemandProto.clone();
         }
         ins.add(demand);
 
@@ -65,12 +70,12 @@ public class Allocator {
         _updateIns(key, insI, ins);
     }
 
-    public void removeRandomPlayer() {
+    public void removeRandomPlayer() { // wip
         // pick key
         int key;
         List<Instance> insMapEntry;
         do {
-            key = Util.rand(0, Config.INS_CAPACITY);
+            key = Util.rand(ondemandProto.capacity);
             insMapEntry = _insMap.get(key);
         } while (insMapEntry.isEmpty());
 

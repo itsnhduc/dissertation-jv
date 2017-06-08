@@ -1,5 +1,7 @@
 package dissertation.pricing;
 
+import dissertation.pricing.FileParser.Format;
+import dissertation.pricing.Instance.CapacityType;
 import java.io.FileNotFoundException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -11,77 +13,77 @@ public class DissertationJv {
         // record start time
         TimeUtil.start();
 
-        _testQuotaRange(6600, 6800, 10);
+        // read file
+        List<Integer> data = _readFile();
+        _testQuota(data, CapacityType.G22XLarge, 6700);
 
         // output time taken
         System.out.println("");
         TimeUtil.end();
     }
+    
+    private static List<Integer> _readFile() throws FileNotFoundException, ParseException {
+        String region = Config.REGION;
+        int month = Config.MONTH;
+        String filePath = Config.FILE_PATH;
+        Format fileFormat = Config.FILE_FORMAT;
+        
+        FileContent allRegData = FileParser.read(filePath, month, fileFormat);
+        return allRegData.content.get(region);
+    }
 
-    private static void _testQuotaRange(int minQuota, int maxQuota, int step)
+    private static void _testQuotaRange(
+            List<Integer> curRegData, CapacityType capacityType, int minQuota, int maxQuota, int step)
             throws IllegalAccessException, ParseException, FileNotFoundException {
-        List<QuotaTestResult> results = new ArrayList<>();
+        List<SimResult> results = new ArrayList<>();
         for (int curQ = minQuota; curQ <= maxQuota; curQ += step) {
-            results.add(_testQuota(curQ));
+            results.add(_testQuota(curRegData, capacityType, curQ));
         }
+
         System.out.println("Quota" + "\t"
                 + "On-demand" + "\t"
                 + "Reserved" + "\t"
                 + "Saving");
-        results.forEach((res) -> {
-            System.out.println(res.quota + "\t"
-                    + res.ondemandCost + "\t"
-                    + res.reservedCost + "\t"
-                    + res.expectedSaving);
-        });
+        results.forEach((res) -> System.out.println(res.toLineString()));
     }
 
-    private static QuotaTestResult _testQuota(int reservedQuota)
+    private static SimResult _testQuota(
+            List<Integer> curRegData, CapacityType capacityType, int quota)
             throws IllegalAccessException, ParseException, FileNotFoundException {
-        System.out.println("///////////////////// " + reservedQuota + " /////////////////////");
-        // output config
-        System.out.println("Config");
-        System.out.println(Config.all());
+        System.out.println("///////////////////// " + quota + " /////////////////////");
+        // gather config
+        int deltaTime = Config.DELTA_TIME;
+        int[] demandPool = Config.DEMAND_POOL;
 
         // init allocators
-        Allocator ondemandAllocator = new Allocator();
-        Allocator hybridAllocator = new Allocator(reservedQuota);
-
-        // read file
-        String fileName = Config.FILE_NAME;
-        int zMonth = Config.MONTH;
-        System.out.println("Reading from " + fileName + ", month = " + (zMonth + 1));
-        List<Integer> aprilData = Util.readPlayerCount(fileName, zMonth);
-        System.out.println("    DONE");
+        Allocator ondemandAllocator = new Allocator(capacityType);
+        Allocator hybridAllocator = new Allocator(capacityType, quota);
 
         // 2 minutes/entry
         System.out.println("");
-        System.out.println("Processing " + aprilData.size() + " timestamps...");
-        for (int i = 0; i < aprilData.size(); i++) {
+        System.out.println("Processing " + curRegData.size() + " timestamps...");
+        for (int i = 0; i < curRegData.size(); i++) {
             if (i >= 5000 && i % 5000 == 0) {
                 System.out.println("    " + i + " done");
             }
             // tick
             if (i != 0) {
-                ondemandAllocator.tickIns(Config.DELTA_TIME);
-                hybridAllocator.tickIns(Config.DELTA_TIME);
+                ondemandAllocator.tickIns(deltaTime);
+                hybridAllocator.tickIns(deltaTime);
             }
 
             // calculate diff
-            int prev = i != 0 ? aprilData.get(i - 1) : 0;
-            int cur = aprilData.get(i);
-
-            // >> ondemand scheme
+            int prev = i != 0 ? curRegData.get(i - 1) : 0;
+            int cur = curRegData.get(i);
             int diff = cur - prev;
 
             // if more player
             if (diff > 0) {
                 // allocate simulated new demand
                 for (int p = 0; p < diff; p++) {
-                    int curDemand = Util.rand(1, Config.INS_CAPACITY);
+                    int curDemand = Util.rand(demandPool);
                     ondemandAllocator.allocatePlayer(curDemand);
                     hybridAllocator.allocatePlayer(curDemand);
-
                 }
             } else {
                 // if less player
@@ -97,25 +99,17 @@ public class DissertationJv {
                 ondemandAllocator.trimIns();
                 hybridAllocator.trimIns();
             }
-
-//            System.out.println("diff = " + diff);            
-//            System.out.println("on-demand: " + ondemandAllocator.toString());
-//            System.out.println("hybrid: " + hybridAllocator.toString());
         }
-        System.out.println("    DONE");
 
         // out total ondemand price
-        float ondemandCost = ondemandAllocator.getCost();
-        float hybridCost = hybridAllocator.getCost();
-        float expectedSaving = ondemandCost - hybridCost;
-        System.out.println("");
-        System.out.println("Total cost");
-        System.out.println("    On-demand scheme: $" + ondemandCost);
-        System.out.println("    Hybrid scheme: $" + hybridCost);
-        System.out.println("    Expected saving: $" + expectedSaving);
-        System.out.println("////////////////////////////////////////////////");
+        SimResult res = new SimResult(
+                quota,
+                ondemandAllocator.getCost(),
+                hybridAllocator.getCost());
 
-        return new QuotaTestResult(reservedQuota, ondemandCost, hybridCost);
+        System.out.println(res.toString());
+
+        return res;
     }
 
 }
