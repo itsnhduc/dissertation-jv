@@ -2,6 +2,7 @@ package dissertation.pricing;
 
 import dissertation.pricing.Instance.CapacityType;
 import dissertation.pricing.Instance.PricingType;
+import dissertation.pricing.Instance.Region;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,9 +15,9 @@ public class Allocator {
     private final HashMap<Integer, List<Instance>> _insMap;
     private float _wrapCost = 0.0f;
 
-    public Allocator(CapacityType capacityType, int reservedQuota) {
+    public Allocator(CapacityType capacityType, Region region, int reservedQuota) {
         this.reservedQuota = reservedQuota;
-        this.ondemandProto = new Instance(PricingType.Ondemand, capacityType);
+        this.ondemandProto = new Instance(PricingType.Ondemand, capacityType, region);
 
         // map by available space
         _insMap = new HashMap<>();
@@ -27,12 +28,12 @@ public class Allocator {
         // init reserved ins
         for (int i = 0; i < this.reservedQuota; i++) {
             _insMap.get(ondemandProto.capacity)
-                    .add(new Instance(PricingType.Reserved, capacityType));
+                    .add(new Instance(PricingType.Reserved, capacityType, region));
         }
     }
 
-    public Allocator(CapacityType capacityType) {
-        this(capacityType, 0);
+    public Allocator(CapacityType capacityType, Region region) {
+        this(capacityType, region, 0);
     }
 
     private void _updateIns(int key, int insI, Instance ins) {
@@ -70,7 +71,7 @@ public class Allocator {
         _updateIns(key, insI, ins);
     }
 
-    public void removeRandomPlayer() { // wip
+    public void removeRandomPlayer() {
         // pick key
         int key;
         List<Instance> insMapEntry;
@@ -107,7 +108,7 @@ public class Allocator {
             for (int i = 0; i < entry.size(); i++) {
                 Instance ins = entry.get(i);
                 if (ins.isReleasable()) {
-//                    // calculate cost
+                    // calculate cost
                     float insCost = ins.getCost();
                     _wrapCost += insCost;
 
@@ -133,6 +134,14 @@ public class Allocator {
         return "{ " + _insMap.keySet().stream()
                 .map((key) -> "(" + key + ": " + _insMap.get(key).size() + "), ")
                 .reduce("", String::concat) + "}";
+    }
+    
+    public int countIns() {
+        int res = 0;
+        for (int key : _insMap.keySet()){
+            res += _insMap.get(key).size();
+        }
+        return res;
     }
 
 }

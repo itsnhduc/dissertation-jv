@@ -13,6 +13,10 @@ public class Instance {
     public enum CapacityType {
         G22XLarge, G28XLarge
     }
+    
+    public enum Region {
+        USA, UK, Germany
+    }
 
     public final int capacity;
     public final int cutoffPeriod;
@@ -21,23 +25,23 @@ public class Instance {
     private int _uptime;
     private final List<Integer> _players;
 
-    public Instance(PricingType pricingType, CapacityType capacityType, int uptime, List<Integer> players) {
+    public Instance(PricingType pricingType, CapacityType capacityType, Region region, int uptime, List<Integer> players) {
         switch (pricingType) {
             case Ondemand:
-                this.cutoffPeriod = Config.ONDEMAND_CUTOFF_PERIOD;
+                this.cutoffPeriod = Config.Instance.ONDEMAND_CUTOFF_PERIOD;
                 break;
             case Reserved:
-                this.cutoffPeriod = Config.RESERVED_CUTOFF_PERIOD;
+                this.cutoffPeriod = Config.Instance.RESERVED_CUTOFF_PERIOD;
                 break;
             default:
                 this.cutoffPeriod = -1; // not possible
         }
         switch (capacityType) {
             case G22XLarge:
-                this.capacity = Config.G22X_INS_CAPACITY;
+                this.capacity = Config.Instance.G22XLarge.INS_CAPACITY;
                 break;
             case G28XLarge:
-                this.capacity = Config.G28X_INS_CAPACITY;
+                this.capacity = Config.Instance.G28XLarge.INS_CAPACITY;
                 break;
             default:
                 this.capacity = -1; // not possible
@@ -46,10 +50,34 @@ public class Instance {
             case Ondemand:
                 switch (capacityType) {
                     case G22XLarge:
-                        this.unitPrice = Config.G22X_GERMANY_ONDEMAND_PRICE;
+                        switch (region) {
+                            case USA:
+                                this.unitPrice = Config.Instance.G22XLarge.Ondemand.USA_PRICE;
+                                break;
+                            case UK:
+                                this.unitPrice = Config.Instance.G22XLarge.Ondemand.UK_PRICE;
+                                break;
+                            case Germany:
+                                this.unitPrice = Config.Instance.G22XLarge.Ondemand.GERMANY_PRICE;
+                                break;
+                            default:
+                                this.unitPrice = -1e10f; // not possible
+                        }
                         break;
                     case G28XLarge:
-                        this.unitPrice = Config.G28X_GERMANY_ONDEMAND_PRICE;
+                        switch (region) {
+                            case USA:
+                                this.unitPrice = Config.Instance.G28XLarge.Ondemand.USA_PRICE;
+                                break;
+                            case UK:
+                                this.unitPrice = Config.Instance.G28XLarge.Ondemand.UK_PRICE;
+                                break;
+                            case Germany:
+                                this.unitPrice = Config.Instance.G28XLarge.Ondemand.GERMANY_PRICE;
+                                break;
+                            default:
+                                this.unitPrice = -1e10f; // not possible
+                        }
                         break;
                     default:
                         this.unitPrice = -1e10f; // not possible
@@ -58,10 +86,34 @@ public class Instance {
             case Reserved:
                 switch (capacityType) {
                     case G22XLarge:
-                        this.unitPrice = Config.G22X_GERMANY_RESERVED_PRICE;
+                        switch (region) {
+                            case USA:
+                                this.unitPrice = Config.Instance.G22XLarge.Reserved.USA_PRICE;
+                                break;
+                            case UK:
+                                this.unitPrice = Config.Instance.G22XLarge.Reserved.UK_PRICE;
+                                break;
+                            case Germany:
+                                this.unitPrice = Config.Instance.G22XLarge.Reserved.GERMANY_PRICE;
+                                break;
+                            default:
+                                this.unitPrice = -1e10f; // not possible
+                        }
                         break;
                     case G28XLarge:
-                        this.unitPrice = Config.G28X_GERMANY_RESERVED_PRICE;
+                        switch (region) {
+                            case USA:
+                                this.unitPrice = Config.Instance.G28XLarge.Reserved.USA_PRICE;
+                                break;
+                            case UK:
+                                this.unitPrice = Config.Instance.G28XLarge.Reserved.UK_PRICE;
+                                break;
+                            case Germany:
+                                this.unitPrice = Config.Instance.G28XLarge.Reserved.GERMANY_PRICE;
+                                break;
+                            default:
+                                this.unitPrice = -1e10f; // not possible
+                        }
                         break;
                     default:
                         this.unitPrice = -1e10f; // not possible
@@ -74,8 +126,8 @@ public class Instance {
         _players = players;
     }
 
-    public Instance(PricingType pricingType, CapacityType capacityType) {
-        this(pricingType, capacityType, 0, new ArrayList<>());
+    public Instance(PricingType pricingType, CapacityType capacityType, Region region) {
+        this(pricingType, capacityType, region, 0, new ArrayList<>());
     }
 
     public void tick(int deltaTime) {
